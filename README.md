@@ -1,6 +1,6 @@
 # Vector Search Application
 
-Vector Search Application is a Python-based tool for searching vector patterns in text files within a specified directory. It uses PyQt5 for the GUI interface, providing a simple way to browse directories and view results.
+Vector Search Application is a Python-based tool for searching vector patterns in text files within a specified directory, with GUI.
 
 ## Features
 
