@@ -11,12 +11,3 @@ Vector Search Application is a Python-based tool for searching vector patterns i
 
 ## Screenshot
 ![image](https://github.com/user-attachments/assets/76c3e538-c639-428e-bdf9-8270f54e987b)
-
-
-## Installation
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/yourusername/vector-search-app.git
-   cd vector-search-app
