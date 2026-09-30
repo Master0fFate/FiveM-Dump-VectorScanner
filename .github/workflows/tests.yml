@@ -67,3 +67,71 @@ jobs:
             dist/SHA256SUMS.txt
             dist/BUILD-INFO.json
             dist/smoke-report.json
+      - name: Prepare bounded transfer parts
+        shell: python
+        run: |
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          source = Path('dist/VectorSearch.exe')
+          target = Path('dist/transfer')
+          target.mkdir()
+          parts = []
+          digest = hashlib.sha256()
+          with source.open('rb') as stream:
+              for number in range(1, 5):
+                  chunk = stream.read(20 * 1024 * 1024)
+                  if not chunk:
+                      break
+                  digest.update(chunk)
+                  name = f'VectorSearch.exe.part{number:03d}'
+                  (target / name).write_bytes(chunk)
+                  parts.append({'name': name, 'size': len(chunk), 'sha256': hashlib.sha256(chunk).hexdigest()})
+              if stream.read(1):
+                  raise RuntimeError('Executable exceeds the configured four-part transfer limit')
+          manifest = {'source_commit': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'],
+                      'name': source.name, 'size': source.stat().st_size,
+                      'sha256': digest.hexdigest(), 'parts': parts}
+          assert manifest['sha256'] in Path('dist/SHA256SUMS.txt').read_text()
+          (target / 'transfer-manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+          print(json.dumps(manifest, indent=2))
+      - name: Preserve transfer part 1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: VectorSearch-transfer-part001
+          if-no-files-found: error
+          retention-days: 30
+          path: dist/transfer/VectorSearch.exe.part001
+      - name: Preserve transfer part 2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: VectorSearch-transfer-part002
+          if-no-files-found: ignore
+          retention-days: 30
+          path: dist/transfer/VectorSearch.exe.part002
+      - name: Preserve transfer part 3 if needed
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: VectorSearch-transfer-part003
+          if-no-files-found: ignore
+          retention-days: 30
+          path: dist/transfer/VectorSearch.exe.part003
+      - name: Preserve transfer part 4 if needed
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: VectorSearch-transfer-part004
+          if-no-files-found: ignore
+          retention-days: 30
+          path: dist/transfer/VectorSearch.exe.part004
+      - name: Preserve transfer verification metadata
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: VectorSearch-transfer-metadata
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist/transfer/transfer-manifest.json
+            dist/SHA256SUMS.txt
+            dist/BUILD-INFO.json
+            dist/smoke-report.json
