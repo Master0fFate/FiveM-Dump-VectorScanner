@@ -72,3 +72,18 @@ Recorded in [benchmarks/results-linux-python312.json](benchmarks/results-linux-p
 | 50,000 short lines, one vector each | 0.0595 s | 0.1396 s | 22.49 KiB | 335.94 KiB |
 
 The large-line case uses roughly **246× less peak Python memory**. Dense-match parsing is slower because the new engine validates the expanded numeric syntax and creates a structured record for every match. This is a bounded-memory/correctness improvement, not a claim of universal speedup; filesystem and machine timings vary. The GUI separately avoids one Qt signal and one widget append per match by batching results and limiting retained text.
+
+## Windows executable builds
+
+After the Linux/Windows test matrix passes on a push to `main`, CI builds a standalone **Windows x64** `VectorSearch.exe` with Python 3.12 and PyInstaller. The executable name matches earlier release assets; no separate Python installation is needed. The build is unsigned, so Windows may show a publisher/SmartScreen warning.
+
+Before uploading the artifact, CI launches the **actual executable** in Qt's offscreen mode. It scans 2,502 synthetic matches, validates signed/scientific and multiline parsing, verifies the 1,000-line display bound, exports all matches, and checks temporary-file cleanup. The artifact contains the executable, its SHA-256 checksum, source-commit/build provenance, and the smoke-test report. Offscreen testing does not replace interactive testing on every Windows version; Windows 10/11 x64 is the intended desktop target.
+
+To reproduce on Windows with Python 3.12 x64:
+
+```sh
+python -m pip install -r requirements.txt -r requirements-build.txt
+python -m PyInstaller --noconfirm --clean --onefile --windowed --name VectorSearch VectorSearch.py
+```
+
+`VectorSearch.exe --smoke-test <report.json>` runs the offline packaging check instead of the normal GUI. CI sets `QT_QPA_PLATFORM=offscreen` and verifies both the exit code and report before preserving release files. Building an artifact does not automatically publish a GitHub Release.

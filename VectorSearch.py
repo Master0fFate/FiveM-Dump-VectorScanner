@@ -267,8 +267,18 @@ class VectorSearchApp(QWidget):
             event.accept()
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["--smoke-test"]:
+        if len(argv) != 2:
+            return 2
+        from packaging_smoke import run
+        return run(argv[1])
+    app = QApplication([sys.argv[0], *argv])
     window = VectorSearchApp()
     window.show()
-    sys.exit(app.exec_())
+    return app.exec_()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
