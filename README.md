@@ -54,7 +54,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q VectorSearch.py vector_scanner.py tests benchmarks
 ```
 
-Install `requirements.txt` to run all GUI tests; otherwise those tests are explicitly skipped. GUI tests use Qt's offscreen platform and exercise repeated starts, copy/plain-text output, display caps, complete exports beyond the display cap, atomic export failure, temporary-file cleanup, error recovery, cancellation with a full queue, and close-during-scan. Core tests cover parsing, chunk boundaries, multiline coordinates, huge lines, symlinks, invalid encoding, deterministic filters, permission errors, CLI behavior, and limits. CI runs on Linux and Windows with Python 3.10/3.12.
+Install `requirements.txt` to run all GUI tests; otherwise those tests are explicitly skipped. GUI tests use Qt's offscreen platform and exercise repeated starts, copy/plain-text output, display caps, complete exports beyond the display cap, atomic export failure, temporary-file cleanup, error recovery, cancellation with a full queue, and close-during-scan. Core tests cover parsing, chunk boundaries, multiline coordinates, huge lines, symlinks, invalid encoding, deterministic filters, permission errors, CLI behavior, and limits. CI runs on Linux and Windows with Python 3.10, 3.12 and 3.14.7.
 
 ## Reproducible benchmark
 
@@ -75,15 +75,17 @@ The large-line case uses roughly **246× less peak Python memory**. Dense-match 
 
 ## Windows executable builds
 
-After the Linux/Windows test matrix passes on a push to `main`, CI builds a standalone **Windows x64** `VectorSearch.exe` with Python 3.12 and PyInstaller. The executable name matches earlier release assets; no separate Python installation is needed. The build is unsigned, so Windows may show a publisher/SmartScreen warning.
+After the Linux/Windows test matrix passes on a push to `main`, CI builds a standalone **Windows x64** `VectorSearch.exe` with Python 3.14.7 and PyInstaller. The executable name matches earlier release assets; no separate Python installation is needed. The build is unsigned, so Windows may show a publisher/SmartScreen warning.
 
-Before uploading the artifact, CI launches the **actual executable** in Qt's offscreen mode. It scans 2,502 synthetic matches, validates signed/scientific and multiline parsing, verifies the 1,000-line display bound, exports all matches, and checks temporary-file cleanup. The artifact contains the executable, its SHA-256 checksum, source-commit/build provenance, and the smoke-test report. Offscreen testing does not replace interactive testing on every Windows version; Windows 10/11 x64 is the intended desktop target.
+Before uploading the artifact, CI launches the **actual executable** in both Qt's offscreen mode and the native Windows backend. It scans 2,502 synthetic matches, validates signed/scientific and multiline parsing, verifies the 1,000-line display bound, exports all matches, and checks temporary-file cleanup. The artifact contains the executable, its SHA-256 checksum, source-commit/build provenance, and the smoke-test report. Offscreen testing does not replace interactive testing on every Windows version; Windows 10/11 x64 is the intended desktop target.
 
-To reproduce on Windows with Python 3.12 x64:
+To reproduce on Windows with Python 3.14.7 x64:
 
 ```sh
 python -m pip install -r requirements.txt -r requirements-build.txt
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name VectorSearch VectorSearch.py
+python -m PyInstaller --noconfirm --clean VectorSearch.spec
 ```
 
-`VectorSearch.exe --smoke-test <report.json>` runs the offline packaging check instead of the normal GUI. CI sets `QT_QPA_PLATFORM=offscreen` and verifies both the exit code and report before preserving release files. Building an artifact does not automatically publish a GitHub Release.
+`VectorSearch.exe --smoke-test <report.json>` runs the offline packaging check instead of the normal GUI. CI tests `QT_QPA_PLATFORM=offscreen` and `QT_QPA_PLATFORM=windows`, verifying both the exit code and report before preserving release files. Building an artifact does not automatically publish a GitHub Release.
+
+The checked-in packaging spec excludes unused QML/Quick/network/DBus/WebSockets DLLs, the optional WebGL/TUIO/Linux portal plugins, and unused Qt translation catalogs. Windows/offscreen platform support, the Windows widget style, image/icon plugins, and QtGui graphics fallbacks are retained. Native Windows rendering and full export are tested against the final executable.

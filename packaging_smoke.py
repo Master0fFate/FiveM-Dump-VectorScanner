@@ -9,7 +9,7 @@ import traceback
 
 
 def run(output_path):
-    """Write a machine-readable result, then exit without opening a user window."""
+    """Write a machine-readable result, then exit after displaying only the synthetic test window."""
     report = {"ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "machine": platform.machine(),
               "platform": platform.platform()}
@@ -28,6 +28,10 @@ def run(output_path):
                 "myvector3(1,2,3)\nvector3(1,2,3,4)\n", encoding="utf-8")
             window = VectorSearchApp()
             window.directory = str(fixture)
+            window.show()
+            app.processEvents()
+            if window.grab().isNull():
+                raise AssertionError("GUI could not render its test window")
             if window.max_matches.value() != 0:
                 raise AssertionError("Default GUI scan must be unlimited")
             window.start_search()
@@ -57,8 +61,8 @@ def run(output_path):
             if not spool.closed:
                 raise AssertionError("Result spool remained open after close")
             window = None
-            report.update(ok=True, exported_matches=len(rows), visible_limit=DISPLAY_LIMIT,
-                          checks=["GUI startup", "unlimited scan", "bounded display", "full JSONL export",
+            report.update(ok=True, qt_platform=app.platformName(), exported_matches=len(rows), visible_limit=DISPLAY_LIMIT,
+                          checks=["GUI startup and rendering", "unlimited scan", "bounded display", "full JSONL export",
                                   "signed and scientific numbers", "multiline vectors",
                                   "invalid literal rejection", "temporary result cleanup"])
     except Exception:
